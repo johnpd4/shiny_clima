@@ -83,6 +83,7 @@ carrega_csv = function(path){
   banco$lat = lat |> sub(pattern = ",", replacement = ".") |> as.numeric()
   banco$lon = lon |> sub(pattern = ",", replacement = ".") |> as.numeric()
   banco$altitude = altitude |> sub(pattern = ",", replacement = ".") |> as.numeric()
+  banco$missing = is.na(banco$chuva)
   
   dados_agrupdos = data.frame()
   
@@ -106,7 +107,8 @@ carrega_csv = function(path){
                                                regiao = unique(regiao),
                                                uf = unique(uf),
                                                estacao = unique(estacao),
-                                               altitude = unique(altitude))
+                                               altitude = unique(altitude),
+                                               missing = mean(missing))
     
     
     dados_agrupdos = rbind(dados_agrupdos, aux)
@@ -142,7 +144,8 @@ grp_csv_por_pasta = function(nome_pasta){
       
     }
     
-    banco = idw_banco(banco)
+    # Para re-adicionar idw, descomente essa linha :)
+    # banco = idw_banco(banco)
     
     write.table(file = paste0("./dados_shiny/", dir, ".csv"), x = banco,
                 sep = ",", row.names = F)
@@ -282,7 +285,7 @@ idw_banco = function(banco, vizinhos = 5){
 # teste$values = aplica_idw(teste$lat, teste$lon, teste$values, 5)
 # teste
 
-dados = grp_csv_por_pasta("dados_teste")
+dados = grp_csv_por_pasta("dados_estacoes")
 # dados[sample(1:nrow(dados), 5), c(8, 9, 10)] = NA
 # teste = idw_banco(dados)
 # teste

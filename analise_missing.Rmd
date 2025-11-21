@@ -1,0 +1,134 @@
+---
+title: "analise_missing"
+output: html_document
+---
+
+```{r}
+pacman::p_load(ggplot2, dplyr, forcats)
+```
+
+## Analises .{tabset}
+
+### Analise 2023
+
+```{r fig.height = 70, fig.width = 8}
+banco = read.csv("dados_shiny/2023.csv")
+banco = banco |> select(codigo, data_dia, data_mes, data_ano, regiao, uf, estacao, missing)
+
+banco$aux = (banco$missing == 1)
+
+vet_ordem = banco |> group_by(estacao, data_ano) |> summarise(missing = mean(missing),
+                                                              codigo = unique(codigo),
+                                                              data_ano = unique(data_ano),
+                                                              regiao = unique(regiao),
+                                                              estaco = unique(estacao),
+                                                              uf = unique(uf),
+                                                              prop_100 = mean(aux))
+
+vet_ordem = vet_ordem[order(vet_ordem$missing, decreasing = F), ]
+
+banco$estacao = factor(banco$estacao, levels = unique(vet_ordem$estacao))
+
+fig = ggplot(data = banco, aes(x = missing, y = estacao, col = regiao))+
+        geom_point()+
+        geom_point(data = vet_ordem, aes(x = missing, y = estacao), inherit.aes = F, shape = 17, size = 4, alpha = 0.6)+
+        geom_text(data = vet_ordem, aes(x = missing, y = estacao, label = sprintf("%.1f%%", prop_100 * 100),
+                  inherit.aes = FALSE, nudge_x = 0.1), size = 2.7, col = "black") + geom_vline(xintercept = 1)
+fig
+```
+
+
+### Analise 2024
+
+```{r fig.height = 70, fig.width = 8}
+banco = read.csv("dados_shiny/2024.csv")
+banco = banco |> select(codigo, data_dia, data_mes, data_ano, regiao, uf, estacao, missing)
+
+banco$aux = (banco$missing == 1)
+
+vet_ordem = banco |> group_by(estacao, data_ano) |> reframe(missing = mean(missing),
+                                                              codigo = unique(codigo),
+                                                              data_ano = unique(data_ano),
+                                                              regiao = unique(regiao),
+                                                              estaco = unique(estacao),
+                                                              uf = unique(uf),
+                                                              prop_100 = mean(aux))
+
+vet_ordem = vet_ordem[order(vet_ordem$missing, decreasing = F), ]
+
+banco$estacao = factor(banco$estacao, levels = unique(vet_ordem$estacao))
+
+fig = ggplot(data = banco, aes(x = missing, y = estacao, col = regiao))+
+        geom_point()+
+        geom_point(data = vet_ordem, aes(x = missing, y = estacao), inherit.aes = F, shape = 17, size = 4, alpha = 0.6)+
+        geom_text(data = vet_ordem, aes(x = missing, y = estacao, label = sprintf("%.1f%%", prop_100 * 100),
+                  inherit.aes = FALSE, nudge_x = 0.1), size = 2.7, col = "black") + geom_vline(xintercept = 1)
+fig
+```
+
+### Analise 2025
+
+```{r fig.height = 70, fig.width = 8}
+banco = read.csv("dados_shiny/2025.csv")
+banco = banco |> select(codigo, data_dia, data_mes, data_ano, regiao, uf, estacao, missing)
+
+banco$aux = (banco$missing == 1)
+
+vet_ordem = banco |> group_by(estacao, data_ano) |> summarise(missing = mean(missing),
+                                                              codigo = unique(codigo),
+                                                              data_ano = unique(data_ano),
+                                                              regiao = unique(regiao),
+                                                              estaco = unique(estacao),
+                                                              uf = unique(uf),
+                                                              prop_100 = mean(aux))
+
+vet_ordem = vet_ordem[order(vet_ordem$missing, decreasing = F), ]
+
+banco$estacao = factor(banco$estacao, levels = unique(vet_ordem$estacao))
+
+fig = ggplot(data = banco, aes(x = missing, y = estacao, col = regiao))+
+        geom_point()+
+        geom_point(data = vet_ordem, aes(x = missing, y = estacao), inherit.aes = F, shape = 17, size = 4, alpha = 0.6)+
+        geom_text(data = vet_ordem, aes(x = missing, y = estacao, label = sprintf("%.1f%%", prop_100 * 100),
+                  inherit.aes = FALSE, nudge_x = 0.1), size = 2.7, col = "black") + geom_vline(xintercept = 1)
+fig
+```
+
+
+### Analise Tudo
+
+```{r fig.height = 70, fig.width = 8}
+banco = read.csv("dados_shiny/2023.csv")
+aux = read.csv("dados_shiny/2024.csv")
+
+banco = rbind(banco, aux)
+
+aux = read.csv("dados_shiny/2025.csv")
+
+banco = rbind(banco, aux)
+
+banco = banco |> select(codigo, data_dia, data_mes, data_ano, regiao, uf, estacao, missing)
+
+banco$aux = (banco$missing == 1)
+
+banco$data_ano = "2023 - 2025"
+
+vet_ordem = banco |> group_by(estacao, data_ano) |> summarise(missing = mean(missing),
+                                                              codigo = unique(codigo),
+                                                              data_ano = unique(data_ano),
+                                                              regiao = unique(regiao),
+                                                              estaco = unique(estacao),
+                                                              uf = unique(uf),
+                                                              prop_100 = mean(aux))
+
+vet_ordem = vet_ordem[order(vet_ordem$missing, decreasing = F), ]
+
+banco$estacao = factor(banco$estacao, levels = unique(vet_ordem$estacao))
+
+fig = ggplot(data = banco, aes(x = missing, y = estacao, col = regiao))+
+        geom_point()+
+        geom_point(data = vet_ordem, aes(x = missing, y = estacao), inherit.aes = F, shape = 17, size = 4, alpha = 0.6)+
+        geom_text(data = vet_ordem, aes(x = missing, y = estacao, label = sprintf("%.1f%%", prop_100 * 100),
+                  inherit.aes = FALSE, nudge_x = 0.1), size = 2.7, col = "black") + geom_vline(xintercept = 1)
+fig
+```

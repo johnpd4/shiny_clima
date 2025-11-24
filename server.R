@@ -1,7 +1,7 @@
 if(!require(pacman)){install.packages("pacman")}
 
 pacman::p_load(shiny, leaflet, dplyr, htmltools, leaflet, sp, sf, gstat, ggplot2,
-               terra, shinyWidgets, plotly, rlang, leafsync, geobr)
+               terra, shinyWidgets, plotly, rlang, leafsync, geobr, stringr)
 
 source("abas/NNGLS.R")
 source("abas/exploratorio.R")

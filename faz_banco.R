@@ -146,9 +146,12 @@ grp_csv_por_pasta = function(nome_pasta){
     
     # Para re-adicionar idw, descomente essa linha :)
     # banco = idw_banco(banco)
+
+    # Para salvar em csv use a linha abaixo
+    # write.table(file = paste0("./dados_shiny/", dir, ".csv"), x = banco,
+    #             sep = ",", row.names = F)
     
-    write.table(file = paste0("./dados_shiny/", dir, ".csv"), x = banco,
-                sep = ",", row.names = F)
+    write_parquet(file = paste0("./dados_shiny/", dir, ".parquet"), x = banco)
     
   }
   

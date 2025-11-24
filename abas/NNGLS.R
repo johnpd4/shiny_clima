@@ -102,7 +102,7 @@ nngls_server = function(input, output, session){
     
     bancos = list.files("dados_shiny")
     
-    bancos = gsub("\\.csv$", "", bancos)
+    bancos = gsub("\\.parquet$", "", bancos)
     
     selectInput("ano_selecionado_tab_2", "Selecione o Ano em Questão",
                 choices = bancos, selected = bancos[1])
@@ -111,7 +111,7 @@ nngls_server = function(input, output, session){
   
   dados_tab_2 = reactive({
     
-    dados_tab_2 = read.csv(paste0("./dados_shiny/", input$ano_selecionado_tab_2, ".csv"))
+    dados_tab_2 = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_2, ".parquet"))
     
     coordinates(dados_tab_2) = ~lon + lat
     

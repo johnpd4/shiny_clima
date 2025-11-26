@@ -12,34 +12,19 @@ nngls_tab = function(){
         # Tempo por ano
         uiOutput("seletor_anos_tab_2"),
         
+        uiOutput("seletor_dias_tab_2"),
+        
         # Tipo de marcador
         selectInput("marcador_mapa",
                     label = "Selecione o tipo de marcador no Mapa",
                     choices = c("Nenhum" = "nenhum", "Simples" = "simples", "Colorido" = "colorido"),
                     selected = "colorido"),
+        
         # TODO: Estações?
         selectInput(inputId = "angulo",
                     label = "Ângulo Escolhido do Variograma",
-                    choices = c(0, 45, 90, 135),
-                    selected = 45),
-        
-        sliderInput(inputId = "psill",
-                    label = "Partial Sill do Variograma",
-                    value = 100, min = 0, max = 1000),
-        
-        sliderInput(inputId = "range",
-                    label = "Range do Variograma",
-                    value = 100, min = 0, max = 1000),
-        
-        sliderInput(inputId = "nugget",
-                    label = "Tamanho do efeito Pepita",
-                    value = 0, min = 0, max = 1, step = 0.1),
-        
-        selectInput(inputId = "modelo_variograma",
-                    label = "Tipo de modelo do variograma",
-                    choices = c("Exp", "Sph", "Gau", "Mat"),
-                    selected = c("Exp", "Sph", "Gau", "Mat"),
-                    multiple = T)
+                    choices = c("0", "pi/4", "pi/2", "3*pi/4"),
+                    selected = "pi/4")
         
       ), # sidebar
     
@@ -51,9 +36,9 @@ nngls_tab = function(){
           layout_columns(
             
             card(
-              h1("Krigagem Clássica"),
+              h1("Krigagem geor"),
               
-              leafletOutput("mapa_krig_r"),
+              plotOutput("mapa_krig"),
               
               h2("Atualizar o mapa a cima pra krigagem, e colocar em baixo o gráfico de EQM?")
               
@@ -109,9 +94,24 @@ nngls_server = function(input, output, session){
     
   })
   
+  output$seletor_dias_tab_2 = renderUI({
+    
+    inicio = paste0(input$ano_selecionado_tab_2, "-1-1")
+    fim = paste0(input$ano_selecionado_tab_2, "-12-31")
+    
+    dateInput(inputId = "dia_selecionado_tab_2", label = "Escolha a Data", value = inicio, language = "pt-BR",
+              min = inicio, max = fim)
+    
+  })
+  
   dados_tab_2 = reactive({
     
+    # Para testes:
+    input = data.frame(ano_selecionado_tab_2 = "2023", dia_selecionado_tab_2 = "2023-01-01")
+    
     dados_tab_2 = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_2, ".parquet"))
+    
+    dados_tab_2 = dados_tab_2 |> subset(data_dia %in% input$dia_selecionado_tab_2)
     
     coordinates(dados_tab_2) = ~lon + lat
     
@@ -121,25 +121,53 @@ nngls_server = function(input, output, session){
     
   })
   
-  output$mapa_krig_r = renderLeaflet({
+  output$mapa_krig = renderPlot({
+  
+    grade = readRDS("./grade.rds")
     
-    dados_tab_2 = dados_tab_2()
+    aux = dados_tab_2()
     
-    coords <- coordinates(dados_tab_2)
-    df <- as.data.frame(dados_tab_2)
-    df$lon <- coords[,1]
-    df$lat <- coords[,2]
+    aux = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_2, ".parquet"))
     
-    # Create color palette based on 'chuva'
-    pal <- colorNumeric(palette = "BuGn", domain = df$chuva)
+    aux = aux |> subset(data_dia %in% input$dia_selecionado_tab_2)
     
-    mapa = leaflet(df) |>
-      addTiles() |> 
-      addCircleMarkers(~lon, ~lat, color =~ pal(chuva)) |>
-      setMaxBounds(-34.00, 3.47, -78.14, -34.50)
+    geo <- as.geodata(aux, coords.col = c("lon", "lat"), data.col = "chuva")
+    # Colocar covars dps
+    #, covar.col = c("temp","amp","press"))
+    v <- variog(geo)
+  
+    ini <- c(sigma2 = var(geo$data), phi = 0.5 * max(dist(geo$coords)))
+  
+    fit <- likfit(geodata = geo, ini.cov.pars = ini, nugget = 0.1 * ini["sigma2"], cov.model = "matern",
+                  kappa = 0.5, method = "ML") # add covar dps: trend = ~ temp + amp + press,
     
-    mapa 
+    v = switch(input$angulo,
+               "0" = variog(geo, direction = 0),
+               "pi/4" = variog(geo, direction = pi/4),
+               "pi/2" = variog(geo, direction = pi/2),
+               "3*pi/4" = variog(geo, direction = 3*pi/4))
     
+    modelo = variofit(v, ini.cov.pars = fit, cov.model = "matern")
+    
+    coords_df <- as.data.frame(coordinates(grade))
+    
+    coords <- coordinates(grade)
+
+    grade_pix <- SpatialPixels(grade)
+    
+    
+    krigagem_geo = krige.conv(geo, locations = coords_df,
+                              krige = krige.control(obj.model = modelo))
+    
+    grade_pred <- SpatialPixelsDataFrame(
+      grade_pix,
+      data = data.frame(pred = krigagem_geo$predict))
+    
+    spplot(grade_pred, "pred",
+           main = "Krigagem",
+           col.regions = viridis::viridis(100))
+      
+  
   })
   
 }

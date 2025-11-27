@@ -23,8 +23,8 @@ nngls_tab = function(){
         # TODO: Estações?
         selectInput(inputId = "angulo",
                     label = "Ângulo Escolhido do Variograma",
-                    choices = c("0", "pi/4", "pi/2", "3*pi/4"),
-                    selected = "pi/4")
+                    choices = c("0", "45", "90", "135"),
+                    selected = "0")
         
       ), # sidebar
     
@@ -143,9 +143,9 @@ nngls_server = function(input, output, session){
     
     v = switch(input$angulo,
                "0" = variog(geo, direction = 0),
-               "pi/4" = variog(geo, direction = pi/4),
-               "pi/2" = variog(geo, direction = pi/2),
-               "3*pi/4" = variog(geo, direction = 3*pi/4))
+               "45" = variog(geo, direction = pi/4),
+               "90" = variog(geo, direction = pi/2),
+               "135" = variog(geo, direction = 3*pi/4))
     
     modelo = variofit(v, ini.cov.pars = fit, cov.model = "matern")
     

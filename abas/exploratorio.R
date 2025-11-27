@@ -49,7 +49,7 @@ exploratorio_tab = function(){
       
       layout_columns(
         height = "85%",
-        col_widths = c(9, 3),
+        col_widths = c(7, 5),
       
         leafletOutput("mapa_exploratorio"),
         
@@ -57,9 +57,8 @@ exploratorio_tab = function(){
       
       ), # layout_columns
       
-      
+    ), # layout_sidebar
     
-    ) # layout_sidebar
     
   ) # nav_tab
   
@@ -95,7 +94,8 @@ exploratorio_server = function(input, output, session){
                 options = list(`actions-box` = TRUE,
                                `deselect-all-text` = "Desselecionar",
                                `select-all-text` = "Selecionar Todos",
-                               `none-selected-text` = "Nenhuma"))
+                               `none-selected-text` = "Nenhuma",
+                               size = 10))
     
   })
   

@@ -38,7 +38,7 @@ nngls_tab = function(){
             card(
               h1("Krigagem geor"),
               
-              plotOutput("mapa_krig"),
+              leafletOutput("mapa_krig"),
               
               h2("Atualizar o mapa a cima pra krigagem, e colocar em baixo o gráfico de EQM?")
               
@@ -121,11 +121,11 @@ nngls_server = function(input, output, session){
     
   })
   
-  output$mapa_krig = renderPlot({
+  output$mapa_krig = renderLeaflet({
   
     grade = readRDS("./grade.rds")
-    
-    aux = dados_tab_2()
+
+    #aux = dados_tab_2()
     
     aux = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_2, ".parquet"))
     
@@ -155,7 +155,6 @@ nngls_server = function(input, output, session){
 
     grade_pix <- SpatialPixels(grade)
     
-    
     krigagem_geo = krige.conv(geo, locations = coords_df,
                               krige = krige.control(obj.model = modelo))
     
@@ -163,10 +162,11 @@ nngls_server = function(input, output, session){
       grade_pix,
       data = data.frame(pred = krigagem_geo$predict))
     
-    spplot(grade_pred, "pred",
-           main = "Krigagem",
-           col.regions = viridis::viridis(100))
-      
+    raster_obj = grade_pred |> raster()
+    
+    leaflet() |>
+      addTiles() |>
+      addRasterImage(raster_obj)
   
   })
   

@@ -53,7 +53,13 @@ exploratorio_tab = function(){
       
         leafletOutput("mapa_exploratorio"),
         
-        plotlyOutput("mapas_series")
+        card(
+          
+          h1("Clique em uma estação!", style = "text-align: center;"),
+        
+          plotlyOutput("mapas_series")
+        
+        )
       
       ), # layout_columns
       
@@ -157,11 +163,12 @@ exploratorio_server = function(input, output, session){
     
     mapa = leaflet(df) |>
             addTiles() |> 
+            #addMarkers(~lon, ~lat)
             addCircleMarkers(~lon, ~lat, color =~ pal(df |> getElement(input$variavel_exploratorio)),
                              label =~ paste0(str_to_title(df$estacao), " (",
                                              str_to_title(input$variavel_exploratorio), ") : ",
                                              df |> getElement(input$variavel_exploratorio) |> round(digits = 2)),
-                             layerId =~ codigo) |> 
+                             layerId =~ codigo) |>
             addLegend(pal = pal, position = "topright", values = range(df |> getElement(input$variavel_exploratorio)),
                       title = str_to_title(input$variavel_exploratorio)) |>
             setMaxBounds(-34.00, 3.47, -78.14, -34.50)
@@ -174,7 +181,7 @@ exploratorio_server = function(input, output, session){
     
     req(input$mapa_exploratorio_marker_click)
     
-    marker_id = input$mapa_exploratorio_marker_click
+    marker_id = input$mapa_exploratorio_marker_click$id
     
     output$mapas_series = renderPlotly({
       

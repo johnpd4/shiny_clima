@@ -5,6 +5,7 @@ exploratorio_tab = function(){
     title = "Exploratório",
     
     layout_sidebar(
+      fillable = FALSE,
       
       sidebar = sidebar(
         open = "always",
@@ -18,6 +19,19 @@ exploratorio_tab = function(){
                      "Selecione a variável para ser mostrada: ",
                      c("Chuva" = "chuva", "Vento" = "vento", "Pressão" = "press", "Temperatura" = "temp",
                        "Umidade" = "umidade", "Rajada" = "rajada", "Amplitude" = "amp")),
+        
+        pickerInput("estados_selecionados",
+                    "Selecione os estados para serem apresentados no mapa",
+                    choices = c("AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT",
+                                "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS","SC", "SE","SP", "TO"),
+                    selected = c("AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT",
+                                 "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS","SC", "SE","SP", "TO"),
+                    multiple = T,
+                    options = list(`actions-box` = TRUE,
+                                   `deselect-all-text` = "Desselecionar",
+                                   `select-all-text` = "Selecionar Todos",
+                                   `none-selected-text` = "Nenhuma",
+                                   size = 10)),
         
         uiOutput("seletor_estacoes_tab_1")
         
@@ -62,6 +76,8 @@ exploratorio_tab = function(){
         )
       
       ), # layout_columns
+      
+      plotlyOutput("violinos_exploratorio")
       
     ), # layout_sidebar
     
@@ -122,7 +138,7 @@ exploratorio_server = function(input, output, session){
   dados_tab_1 = reactive({
     
     # Para testes:
-    # input = data.frame(ano_selecionado_tab_1 = "2023", dia_selecionado_tab_1 = "2023-01-01")
+    # input = data.frame(ano_selecionado_tab_1 = "2023", dia_selecionado_tab_1 = "2023-01-01", estados_selecionados = c("RS", "SP"))
     
     dados_tab_1 = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_1, ".parquet"))
     
@@ -130,6 +146,9 @@ exploratorio_server = function(input, output, session){
     
     # Pegar soh o dia selecionado
     dados_tab_1 = dados_tab_1 |> subset(data_dia %in% input$dia_selecionado_tab_1)
+    
+    # Pegar soh os estados selecionados
+    dados_tab_1 = dados_tab_1 |> subset(uf %in% input$estados_selecionados)
     
     # Pegar soh as estacoes selecionadas
     dados_tab_1 = dados_tab_1 |> subset(estacao %in% input$estacoes_selecionadas_tab_1)
@@ -146,13 +165,33 @@ exploratorio_server = function(input, output, session){
     
     dados_tab_1 = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_1, ".parquet"))
     #dados_tab_1 = read.csv(paste0("./dados_shiny/", input$ano_selecionado_tab_1, ".csv"))
+    
+    # Pegar soh os estados selecionados
+    dados_tab_1 = dados_tab_1 |> subset(uf %in% input$estados_selecionados)
+    
     return(unique(dados_tab_1$estacao))
+    
+  })
+  
+  shape = read_state(code_state = "all")
+  
+  #shape = spTransform(shape, CRS("+init=epsg:4674"))
+  
+  shapefile = reactive({
+    
+    # Para testes
+    # input = data.frame(estados_selecionados = c("RS", "SP"))
+    
+    shape_subset = shape |> subset(abbrev_state %in% input$estados_selecionados)
+    
+    return(shape_subset)
     
   })
   
   output$mapa_exploratorio = renderLeaflet({
     
     dados_tab_1 = dados_tab_1()
+    shapefile = shapefile()
     
     coords <- coordinates(dados_tab_1)
     df <- as.data.frame(dados_tab_1)
@@ -163,7 +202,7 @@ exploratorio_server = function(input, output, session){
     
     mapa = leaflet(df) |>
             addTiles() |> 
-            #addMarkers(~lon, ~lat)
+            addPolygons(data = shapefile) |>
             addCircleMarkers(~lon, ~lat, color =~ pal(df |> getElement(input$variavel_exploratorio)),
                              label =~ paste0(str_to_title(df$estacao), " (",
                                              str_to_title(input$variavel_exploratorio), ") : ",
@@ -174,6 +213,37 @@ exploratorio_server = function(input, output, session){
             setMaxBounds(-34.00, 3.47, -78.14, -34.50)
     
     mapa 
+    
+  })
+  
+  output$violinos_exploratorio = renderPlotly({
+    
+    dados = dados_tab_1()
+    
+    dados = dados@data
+    
+    fig = plot_ly(data = dados, y =~ chuva, name = "Chuva",
+                  type = "violin", mode = "lines+markers")
+    fig
+    
+    fig1 = plot_ly(data = dados, y =~ vento, name = "Vento",
+                   type = "violin", mode = "lines+markers")
+    fig1
+    
+    fig2 = plot_ly(data = dados, y =~ press, name = "Pressão",
+                   type = "violin", mode = "lines+markers")
+    fig2
+    
+    fig3 = plot_ly(data = dados, y =~ temp, name = "Temperatura",
+                   type = "violin", mode = "lines+markers")
+    fig3
+    
+    fig4 = plot_ly(data = dados, y =~ umidade, name = "Umidade",
+                   type = "violin", mode = "lines+markers")
+    fig4
+    
+    subplot(fig, fig1, fig2, fig3, fig4, nrows = 1) |> layout(legend = list(orientation = "h", y = 1.1,
+                                                                            x = 0.5, xanchor = "center"))
     
   })
   

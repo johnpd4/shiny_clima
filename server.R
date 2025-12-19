@@ -2,7 +2,8 @@ if(!require(pacman)){install.packages("pacman")}
 
 pacman::p_load(shiny, leaflet, dplyr, htmltools, sp, sf, gstat, ggplot2,
                terra, shinyWidgets, plotly, rlang, leafsync, geobr, stringr,
-               gridExtra, scales, magrittr, geoR, raster, nanoparquet, viridis)
+               gridExtra, scales, magrittr, geoR, raster, nanoparquet, viridis,
+               tidyr)
 
 source("abas/NNGLS.R")
 source("abas/exploratorio.R")

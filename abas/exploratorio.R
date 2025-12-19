@@ -1,3 +1,17 @@
+get_cor = function(var){
+  
+  cor = switch(var,
+               "chuva" = '#1f77b4',
+               "vento" = '#ff7f0e',
+               "press" = '#2ca02c',
+               "temp" = '#d62728',
+               "umidade" = '#9467bd',
+               "#7f7f7f")
+  
+  return(cor)
+  
+}
+
 exploratorio_tab = function(){
   
   nav_panel(
@@ -77,10 +91,11 @@ exploratorio_tab = function(){
       
       ), # layout_columns
       
-      plotlyOutput("violinos_exploratorio")
+      plotlyOutput("violinos_exploratorio"),
+      
+      plotlyOutput("medias_temporais_exploratorio")
       
     ), # layout_sidebar
-    
     
   ) # nav_tab
   
@@ -202,8 +217,9 @@ exploratorio_server = function(input, output, session){
     
     mapa = leaflet(df) |>
             addTiles() |> 
-            addPolygons(data = shapefile) |>
+            addPolygons(data = shapefile, color = "black", opacity = 1, weight = 2) |>
             addCircleMarkers(~lon, ~lat, color =~ pal(df |> getElement(input$variavel_exploratorio)),
+                             fillOpacity = 0.9, radius = 5, stroke = F,
                              label =~ paste0(str_to_title(df$estacao), " (",
                                              str_to_title(input$variavel_exploratorio), ") : ",
                                              df |> getElement(input$variavel_exploratorio) |> round(digits = 2)),
@@ -222,28 +238,40 @@ exploratorio_server = function(input, output, session){
     
     dados = dados@data
     
-    fig = plot_ly(data = dados, y =~ chuva, name = "Chuva",
-                  type = "violin", mode = "lines+markers")
-    fig
+    fig = plot_ly(data = dados, y =~ chuva, name = "Chuva", type = "violin")
     
-    fig1 = plot_ly(data = dados, y =~ vento, name = "Vento",
-                   type = "violin", mode = "lines+markers")
-    fig1
+    fig1 = plot_ly(data = dados, y =~ vento, name = "Vento", type = "violin")
     
-    fig2 = plot_ly(data = dados, y =~ press, name = "Pressão",
-                   type = "violin", mode = "lines+markers")
-    fig2
+    fig2 = plot_ly(data = dados, y =~ press, name = "Pressão", type = "violin")
     
-    fig3 = plot_ly(data = dados, y =~ temp, name = "Temperatura",
-                   type = "violin", mode = "lines+markers")
-    fig3
+    fig3 = plot_ly(data = dados, y =~ temp, name = "Temperatura", type = "violin")
     
-    fig4 = plot_ly(data = dados, y =~ umidade, name = "Umidade",
-                   type = "violin", mode = "lines+markers")
-    fig4
+    fig4 = plot_ly(data = dados, y =~ umidade, name = "Umidade", type = "violin")
     
     subplot(fig, fig1, fig2, fig3, fig4, nrows = 1) |> layout(legend = list(orientation = "h", y = 1.1,
                                                                             x = 0.5, xanchor = "center"))
+    
+  })
+  
+  output$medias_temporais_exploratorio = renderPlotly({
+    
+    # Para testes
+    # input = data.frame(ano_selecionado_tab_1 = "2023", variavel_exploratorio = "amp")
+    
+    dados = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_1, ".parquet"),
+                         col_select = c("data_dia", input$variavel_exploratorio))
+    
+    names(dados) = c("data", "var")
+    
+    cor = get_cor(input$variavel_exploratorio)
+    
+    dados = dados |> group_by(data) |> summarise(data = unique(data),
+                                                 var = mean(var, na.rm = T))
+    
+    fig = plot_ly(data = dados, x =~ data, y =~ var,
+                  type = "scatter", mode = "lines+markers",
+                  line = list(color = cor), marker = list(color = cor))
+    fig |> layout(yaxis = list(title = toTitleCase(input$variavel_exploratorio)))
     
   })
   
@@ -263,23 +291,18 @@ exploratorio_server = function(input, output, session){
         
         fig = plot_ly(data = dados, x =~ data_dia, y =~ chuva, name = "Chuva",
                       type = "scatter", mode = "lines+markers")
-        fig
         
         fig1 = plot_ly(data = dados, x =~ data_dia, y =~ vento, name = "Vento",
                        type = "scatter", mode = "lines+markers")
-        fig1
         
         fig2 = plot_ly(data = dados, x =~ data_dia, y =~ press, name = "Pressão",
                        type = "scatter", mode = "lines+markers")
-        fig2
         
         fig3 = plot_ly(data = dados, x =~ data_dia, y =~ temp, name = "Temperatura",
                        type = "scatter", mode = "lines+markers")
-        fig3
         
         fig4 = plot_ly(data = dados, x =~ data_dia, y =~ umidade, name = "Umidade",
                        type = "scatter", mode = "lines+markers")
-        fig4
         
         subplot(fig, fig1, fig2, fig3, fig4, nrows = 5) |> layout(legend = list(orientation = "h", y = 1.1,
                                                                                 x = 0.5, xanchor = "center"))

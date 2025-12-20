@@ -93,7 +93,31 @@ exploratorio_tab = function(){
       
       plotlyOutput("violinos_exploratorio"),
       
-      plotlyOutput("medias_temporais_exploratorio")
+      plotlyOutput("medias_temporais_exploratorio"),
+      
+      card(
+        
+        layout_columns(
+          col_widths = c(2, 10),
+          
+          card(
+          
+            radioButtons("variavel_exploratorio_cross",
+                         "Selecione uma segunda variável para comarar: ",
+                         c("Chuva" = "chuva", "Vento" = "vento", "Pressão" = "press", "Temperatura" = "temp",
+                           "Umidade" = "umidade", "Rajada" = "rajada", "Amplitude" = "amp")),
+            
+            radioButtons("cross_cor_exploratorio",
+                         "Como devem ser coloridos os pontos?",
+                         c("Não colorir", "Por Região", "Por Estado")),
+            
+          ), # card
+          
+          plotlyOutput("scatter_cross_exploratorio")
+          
+        ) # layout_columns
+        
+      ), # card
       
     ), # layout_sidebar
     
@@ -259,19 +283,44 @@ exploratorio_server = function(input, output, session){
     # input = data.frame(ano_selecionado_tab_1 = "2023", variavel_exploratorio = "amp")
     
     dados = read_parquet(paste0("./dados_shiny/", input$ano_selecionado_tab_1, ".parquet"),
-                         col_select = c("data_dia", input$variavel_exploratorio))
+                         col_select = c("data_dia", input$variavel_exploratorio, "estacao"))
     
-    names(dados) = c("data", "var")
+    # dados = dados |> subset(data_dia %in% input$dia_selecionado_tab_1)
+    
+    names(dados) = c("data", "var", "estacao")
     
     cor = get_cor(input$variavel_exploratorio)
     
-    dados = dados |> group_by(data) |> summarise(data = unique(data),
-                                                 var = mean(var, na.rm = T))
+    dados_summ = dados |> group_by(data) |> summarise(data = unique(data),
+                                                      var = mean(var, na.rm = T))
     
-    fig = plot_ly(data = dados, x =~ data, y =~ var,
+    fig = plot_ly(data = dados_summ, x =~ data, y =~ var,
                   type = "scatter", mode = "lines+markers",
                   line = list(color = cor), marker = list(color = cor))
-    fig |> layout(yaxis = list(title = toTitleCase(input$variavel_exploratorio)))
+    # fig = fig |> add_trace(data = dados, x =~ data, y =~ var,
+    #                        type = "scatter", mode = "markers", opacity = 0.5, line = list(width = 0))
+    fig = fig |> layout(yaxis = list(title = toTitleCase(input$variavel_exploratorio)))
+    fig
+    
+  })
+  
+  output$scatter_cross_exploratorio = renderPlotly({
+    
+    dados = dados_tab_1()
+    
+    dados = dados@data
+    
+    cor = switch(input$cross_cor_exploratorio,
+                 "Não colorir" = "NULL",
+                 "Por Região" = "regiao",
+                 "Por Estado" = "uf")
+    
+    fig = plot_ly(data = dados,
+                  x = as.formula(paste0("~", input$variavel_exploratorio)),
+                  y = as.formula(paste0("~", input$variavel_exploratorio_cross)),
+                  text =~ paste0(estacao), color = as.formula(paste0("~", cor)),
+                  type = "scatter", mode = "markers")
+    fig
     
   })
   

@@ -436,11 +436,33 @@ exploratorio_server = function(input, output, session){
                                                         var = mean(var),
                                                         agrupamento = unique(agrupamento))
     
+    if (input$tipo_agrupamento_shapefile_exploratorio == "Por Região"){
+      
+      dados$agrupamento[dados$agrupamento == "N"] = "Norte"
+      dados$agrupamento[dados$agrupamento == "NE"] = "Nordeste"
+      dados$agrupamento[dados$agrupamento == "SE"] = "Sudeste"
+      dados$agrupamento[dados$agrupamento == "S"] = "Sul"
+      dados$agrupamento[dados$agrupamento == "CO"] = "Centro Oeste"
+      
+      shape = left_join(shape, dados, by = c("name_region" = "agrupamento"))
+      names(shape) = c("code_region", "nome_regiao", "data", "var", "geom")
+      
+    } else {
+      
+      shape = left_join(shape, dados, by = c("abbrev_state" = "agrupamento"))
+      names(shape) = c("code_state", "abbrev_state", "nome_regiao", "code_region",
+                       "name_region", "data", "var", "geom")
+      
+    }
+    
     pal <- colorNumeric(palette = "Spectral", domain = dados$var)
     
     mapa = leaflet(dados) |>
       addTiles() |> 
-      addPolygons(data = shape, color =~ pal(dados$var), opacity = 1, weight = 2, fillOpacity = 1) |>
+      addPolygons(data = shape, color = "#000000", fillColor =~ pal(var),
+                  label =~ paste0("Valor da variável ", input$variavel_exploratorio, " em ",
+                                  nome_regiao, ": ", var |> round(digits = 2)),
+                  opacity = 1, weight = 2, fillOpacity = 1) |>
       addLegend(pal = pal, position = "topright", values = range(dados$var),
                 title = str_to_title(input$variavel_exploratorio)) |>
       setMaxBounds(-34.00, 3.47, -78.14, -34.50)

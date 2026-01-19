@@ -17,6 +17,8 @@ trunc_min = function(vet){if(all(is.na(vet))){return(0)} else{return(min(vet, na
 carrega_csv = function(path){
   # Funcao q le e faz todas as manipulacoes necessarias pra um arquivo
   # de dados historicos do INMET
+  # A ideia eh que essa funcao faz td o tratamento necessario pra um csv que
+  # outras funcoes q lidem com a organizacao das pastas e os varios arquivos la
   
   arquivo = file(path)
   
@@ -42,7 +44,7 @@ carrega_csv = function(path){
   
   close(arquivo)
   
-  # Aqui lemos o resto do banco depois das infos extras
+  # Aqui lemos o resto do banco pulando o cabecalho
   banco = read.csv(path, skip = 8, sep = ";", dec = ",", header = T)
   
   # Renomear as variaveis
@@ -85,12 +87,18 @@ carrega_csv = function(path){
   banco$altitude = altitude |> sub(pattern = ",", replacement = ".") |> as.numeric()
   banco$missing = is.na(banco$chuva)
   
+  # Variavel auxiliar
   dados_agrupdos = data.frame()
   
+  # Agrega varias linhas baseadas nos niveis categoricos da variavel niveis
+  # que foi feita um pouco antes
   for (i in niveis){
     
+    # Seleciona as linhas apenas de um dos dias
     aux = banco |> subset(data_dia == i)
     
+    # Agrupa as observacoes de um dia por estacao, que nesse caso
+    # usamos o codigo da estacao, caso alguma mude de nome ou tenha algum outro problema
     aux = aux |> group_by(codigo) |> summarise(data_dia = unique(data_dia),
                                                data_semana = unique(data_semana),
                                                data_mes = unique(data_mes),
@@ -110,7 +118,7 @@ carrega_csv = function(path){
                                                altitude = unique(altitude),
                                                missing = mean(missing))
     
-    
+    # Coloca esse dia no dados_agrupados
     dados_agrupdos = rbind(dados_agrupdos, aux)
     
   }
@@ -156,6 +164,9 @@ grp_csv_por_pasta = function(nome_pasta){
   }
   
 }
+
+# O resto daqui pra baixo é IDW e pode ser ignorado, com excecao das ultimas linhas que sao
+# que sao o que chama as funcoes criadas acima
 
 #banco = carrega_csv("dados_estacoes/2020/INMET_CO_DF_A001_BRASILIA_01-01-2020_A_31-12-2020.CSV")
 #grp_csv_por_pasta("dados_estacoes")
